@@ -1,5 +1,3 @@
-'use client';
-
 import { notFound } from "next/navigation";
 import { getChampionAudioQuotes, getChampionById } from '@/app/lib/api';
 import ChampionDetailClient from './ChampionDetailClient';

@@ -15,13 +15,19 @@ interface ChampionRoleStat {
   winRate: number;
 }
 
+export interface Skin {
+  id: string;
+  name: string;
+  image: string;
+}
+
 export interface Champion {
   id: string;
   name: string;
   title: string;
   lore: string;
-  image?: string;  // Marca la propiedad como opcional
-  // Otras propiedades si las tienes
+  image?: string;  
+  skins?: Skin[];  
 }
 
 // --------------------

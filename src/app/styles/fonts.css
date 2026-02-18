@@ -1,0 +1,15 @@
+@font-face {
+    font-family: 'BeaufortforLOL-Regular';
+    src: url('/fonts/BeaufortforLOL-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'SpiegelSans-5Regular_TRIAL';
+    src: url('/fonts/SpiegelSans-5Regular_TRIAL.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}

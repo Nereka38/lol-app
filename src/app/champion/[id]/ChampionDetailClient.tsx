@@ -20,13 +20,13 @@ interface Skin {
 }
 
 interface Quote {
-  text: string;
-  audio: string;
+    text: string;
+    audio: string;
 }
 
 interface ChampionDetailClientProps {
-  champion: Champion;
-  quotes: Quote[];
+    champion: Champion;
+    quotes: Quote[];
 }
 
 export default function ChampionDetailClient({ champion, quotes }: ChampionDetailClientProps) {
@@ -41,14 +41,14 @@ export default function ChampionDetailClient({ champion, quotes }: ChampionDetai
     const [skinIndex, setSkinIndex] = useState(0);
 
     const nextSkin = () => {
-  if (!champion.skins?.length) return;
-  setSkinIndex((prev) => (prev + 1) % champion.skins.length);
-};
+        if (!champion.skins || champion.skins.length === 0) return; // protección
+        setSkinIndex((prev) => (prev + 1) % champion.skins.length);
+    };
 
-const prevSkin = () => {
-  if (!champion.skins?.length) return;
-  setSkinIndex((prev) => (prev - 1 + champion.skins.length) % champion.skins.length);
-};
+    const prevSkin = () => {
+        if (!champion.skins || champion.skins.length === 0) return;
+        setSkinIndex((prev) => (prev - 1 + champion.skins.length) % champion.skins.length);
+    };
 
     // Función para extraer el nombre del archivo antes de la extensión .ogg
     const getFileName = (url: string) => {
@@ -356,12 +356,10 @@ const prevSkin = () => {
                             <ModalContent bg="#0a0e12" border="2px solid #C89B3C">
                                 <ModalCloseButton color="white" />
                                 <ModalBody p={0}>
-                                    {selectedSkin && (
+                                    {champion.skins?.[skinIndex] && (
                                         <Image
-                                            src={`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champion.id}_${selectedSkin.num}.jpg`}
-                                            alt={selectedSkin.name}
-                                            width="100%"
-                                            borderRadius="md"
+                                            src={`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champion.id}_${champion.skins[skinIndex].num}.jpg`}
+                                            alt={champion.skins[skinIndex].name}
                                         />
                                     )}
                                 </ModalBody>

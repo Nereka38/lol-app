@@ -1,9 +1,16 @@
+export interface Skin {
+  id: string;
+  name: string;
+  image: string;
+}
+
 export interface Champion {
   id: string;
   name: string;
   title: string;
   lore?: string;
   image?: string;
+  skins?: Skin[]; 
   tags?: string[];  // Esta es la propiedad que falta
   blurb?: string;  // Si tienes alguna descripción corta del campeón
 }

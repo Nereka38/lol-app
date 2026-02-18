@@ -3,6 +3,7 @@ const BASE_URL = `https://ddragon.leagueoflegends.com/cdn/${VERSION}/data/es_ES`
 
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { Skin } from '../types/champions';
 
 interface Quote {
   text: string;
@@ -13,12 +14,6 @@ interface ChampionRoleStat {
   role: string;
   popularity: number;
   winRate: number;
-}
-
-export interface Skin {
-  id: string;
-  name: string;
-  image: string;
 }
 
 export interface Champion {

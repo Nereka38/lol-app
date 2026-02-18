@@ -41,12 +41,14 @@ export default function ChampionDetailClient({ champion, quotes }: ChampionDetai
     const [skinIndex, setSkinIndex] = useState(0);
 
     const nextSkin = () => {
-        setSkinIndex((prev) => (prev + 1) % champion.skins.length);
-    };
+  if (!champion.skins?.length) return;
+  setSkinIndex((prev) => (prev + 1) % champion.skins.length);
+};
 
-    const prevSkin = () => {
-        setSkinIndex((prev) => (prev - 1 + champion.skins.length) % champion.skins.length);
-    };
+const prevSkin = () => {
+  if (!champion.skins?.length) return;
+  setSkinIndex((prev) => (prev - 1 + champion.skins.length) % champion.skins.length);
+};
 
     // Función para extraer el nombre del archivo antes de la extensión .ogg
     const getFileName = (url: string) => {

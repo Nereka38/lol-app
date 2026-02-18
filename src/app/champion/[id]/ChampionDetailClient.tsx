@@ -5,6 +5,7 @@ import { Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIco
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { ChampionStats } from './ChampionStats';
+import { Champion } from '@/app/types/champions';
 
 interface Spell {
     id: string;
@@ -18,7 +19,17 @@ interface Skin {
     name: string;
 }
 
-export default function ChampionDetailClient({ champion, quotes }) {
+interface Quote {
+  text: string;
+  audio: string;
+}
+
+interface ChampionDetailClientProps {
+  champion: Champion;
+  quotes: Quote[];
+}
+
+export default function ChampionDetailClient({ champion, quotes }: ChampionDetailClientProps) {
     const [selectedSkin, setSelectedSkin] = useState<Skin | null>(null);
     const { isOpen, onOpen, onClose } = useDisclosure();
 

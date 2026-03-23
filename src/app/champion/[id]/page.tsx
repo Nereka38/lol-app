@@ -20,5 +20,5 @@ export default async function ChampionPage(props: { params: Params['params'] }) 
 
   const quotes = await getChampionAudioQuotes(champion.name);
 
-  return <ChampionDetailClient champion={champion} quotes={quotes} />;
+  return <ChampionDetailClient champion={champion} quotes={quotes ?? []} />;
 }

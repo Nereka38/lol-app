@@ -1,317 +1,595 @@
-import { Box, Text, Flex, SimpleGrid } from '@chakra-ui/react';
+'use client';
+
+import { Box, Text, Flex, SimpleGrid, VStack, HStack, Tooltip } from '@chakra-ui/react';
+import { useState } from 'react';
+import { ChampionStats } from '../../types/champions';
+import { calculateStatAtLevel } from '../../lib/api';
 
 interface Props {
-  stats: Record<string, number>;
+  stats: ChampionStats;
 }
 
-// Configuración para la Performance Matrix
-const PERFORMANCE_STATS = [
-  { label: 'Damage', key: 'attackdamage', value: 3, max: 3 },
-  { label: 'Toughness', key: 'defense', value: 1, max: 3 },
-  { label: 'Control', key: 'control', value: 1, max: 3 },
-  { label: 'Mobility', key: 'mobility', value: 3, max: 3 },
-  { label: 'Utility', key: 'utility', value: 1, max: 3 },
-];
-
-// Mapeo de stats reales
-const BASE_STATS_CONFIG = [
-  {
+// Configuración de estadísticas base con iconos y colores
+const STAT_CONFIGS = {
+  // Vida y Regeneración
+  hp: {
     label: 'Health',
-    icon: '❤',
-    key: 'hp',
-    perLevelKey: 'hpperlevel',
-    format: (v: number) => Math.round(v),
+    icon: '❤️',
+    color: '#ff6b6b',
+    description: 'Vida base del campeón',
   },
-  {
-    label: 'Energy / Mana',
-    icon: '◈',
-    key: 'mp',
-    perLevelKey: 'mpperlevel',
-    format: (v: number) => Math.round(v),
+  hpperlevel: {
+    label: 'Health per Level',
+    icon: '💗',
+    color: '#ff6b6b',
+    description: 'Vida ganada por nivel',
   },
-  {
+  hpregen: {
+    label: 'Health Regen',
+    icon: '💚',
+    color: '#4ade80',
+    description: 'Regeneración de vida cada 5 segundos',
+  },
+  hpregenperlevel: {
+    label: 'HP Regen per Level',
+    icon: '🌱',
+    color: '#4ade80',
+    description: 'Regeneración de vida ganada por nivel',
+  },
+
+  // Mana/Energía
+  mp: {
+    label: 'Mana/Energy',
+    icon: '💙',
+    color: '#60a5fa',
+    description: 'Mana o Energía base',
+  },
+  mpperlevel: {
+    label: 'Mana per Level',
+    icon: '💧',
+    color: '#60a5fa',
+    description: 'Mana ganado por nivel',
+  },
+  mpregen: {
+    label: 'Mana Regen',
+    icon: '💎',
+    color: '#3b82f6',
+    description: 'Regeneración de mana cada 5 segundos',
+  },
+  mpregenperlevel: {
+    label: 'MP Regen per Level',
+    icon: '✨',
+    color: '#3b82f6',
+    description: 'Regeneración de mana ganada por nivel',
+  },
+
+  // Armadura y Resistencia
+  armor: {
     label: 'Armor',
-    icon: '🛡',
-    key: 'armor',
-    perLevelKey: 'armorperlevel',
-    format: (v: number) => Math.round(v),
+    icon: '🛡️',
+    color: '#a3a3a3',
+    description: 'Reducción de daño físico',
   },
-  {
-    label: 'Magic Res.',
-    icon: '✦',
-    key: 'spellblock',
-    perLevelKey: 'spellblockperlevel',
-    format: (v: number) => Math.round(v),
+  armorperlevel: {
+    label: 'Armor per Level',
+    icon: '🛡️',
+    color: '#a3a3a3',
+    description: 'Armadura ganada por nivel',
   },
-  {
-    label: 'Attack Dmg',
-    icon: '⚔',
-    key: 'attackdamage',
-    perLevelKey: 'attackdamageperlevel',
-    format: (v: number) => Math.round(v),
+  spellblock: {
+    label: 'Magic Resist',
+    icon: '🔮',
+    color: '#c084fc',
+    description: 'Reducción de daño mágico',
   },
-  {
+  spellblockperlevel: {
+    label: 'MR per Level',
+    icon: '🧿',
+    color: '#c084fc',
+    description: 'Resistencia mágica ganada por nivel',
+  },
+
+  // Daño y Ataque
+  attackdamage: {
+    label: 'Attack Damage',
+    icon: '⚔️',
+    color: '#fbbf24',
+    description: 'Daño de ataque base',
+  },
+  attackdamageperlevel: {
+    label: 'AD per Level',
+    icon: '🗡️',
+    color: '#fbbf24',
+    description: 'Daño de ataque ganado por nivel',
+  },
+  attackspeed: {
+    label: 'Attack Speed',
+    icon: '⚡',
+    color: '#f59e0b',
+    description: 'Ataques por segundo',
+  },
+  attackspeedperlevel: {
+    label: 'AS per Level',
+    icon: '🌪️',
+    color: '#f59e0b',
+    description: 'Porcentaje de velocidad de ataque ganado por nivel',
+  },
+
+  // Otros
+  movespeed: {
     label: 'Move Speed',
-    icon: '↑',
-    key: 'movespeed',
-    format: (v: number) => Math.round(v),
+    icon: '👢',
+    color: '#2dd4bf',
+    description: 'Velocidad de movimiento base',
   },
-  {
-    label: 'Range',
+  attackrange: {
+    label: 'Attack Range',
     icon: '🏹',
-    key: 'attackrange',
-    format: (v: number) => Math.round(v),
+    color: '#fb7185',
+    description: 'Rango de ataque básico',
+  },
+  crit: {
+    label: 'Crit Chance',
+    icon: '💥',
+    color: '#ef4444',
+    description: 'Probabilidad de golpe crítico base',
+  },
+  critperlevel: {
+    label: 'Crit per Level',
+    icon: '🎯',
+    color: '#ef4444',
+    description: 'Crítico ganado por nivel',
+  },
+};
+
+type StatCategory = 'vitality' | 'offense' | 'defense' | 'utility';
+
+interface StatGroupConfig {
+  key: StatCategory;
+  label: string;
+  color: string;
+  stats: (keyof ChampionStats)[];
+}
+
+const STAT_GROUPS: StatGroupConfig[] = [
+  {
+    key: 'vitality',
+    label: 'Vitalidad',
+    color: '#ff6b6b',
+    stats: ['hp', 'hpperlevel', 'hpregen', 'hpregenperlevel', 'mp', 'mpperlevel', 'mpregen', 'mpregenperlevel'],
   },
   {
-    label: 'HP Regen',
-    icon: '✚',
-    key: 'hpregen',
-    perLevelKey: 'hpregenperlevel',
-    format: (v: number) => v.toFixed(1),
+    key: 'offense',
+    label: 'Ofensiva',
+    color: '#fbbf24',
+    stats: ['attackdamage', 'attackdamageperlevel', 'attackspeed', 'attackspeedperlevel', 'attackrange', 'crit', 'critperlevel'],
+  },
+  {
+    key: 'defense',
+    label: 'Defensiva',
+    color: '#60a5fa',
+    stats: ['armor', 'armorperlevel', 'spellblock', 'spellblockperlevel'],
+  },
+  {
+    key: 'utility',
+    label: 'Utilidad',
+    color: '#2dd4bf',
+    stats: ['movespeed'],
   },
 ];
 
-export function ChampionStats({ stats }: Props) {
-  // Calcular valores reales basados en los stats del campeón
-  const getStatValue = (key: string) => {
-    return stats?.[key] ?? 0;
-  };
+function formatStatValue(key: keyof ChampionStats, value: number): string {
+  if (key === 'attackspeed') {
+    return value.toFixed(3);
+  }
+  if (key.includes('perlevel')) {
+    return `+${value}`;
+  }
+  if (key === 'attackrange' || key === 'movespeed') {
+    return Math.round(value).toString();
+  }
+  if (key === 'crit' || key === 'critperlevel') {
+    return `${value}%`;
+  }
+  return Math.round(value).toString();
+}
 
-  // Determinar valores de performance basados en stats reales
-  const damage = Math.min(Math.floor((getStatValue('attackdamage') / 70) * 3), 3) || 2;
-  const toughness = Math.min(Math.floor(((getStatValue('armor') + getStatValue('spellblock')) / 60) * 3), 3) || 1;
-  const mobility = Math.min(Math.floor((getStatValue('movespeed') / 350) * 3), 3) || 2;
+function StatCard({
+  statKey,
+  value,
+  isPerLevel = false,
+}: {
+  statKey: keyof ChampionStats;
+  value: number;
+  isPerLevel?: boolean;
+}) {
+  const config = STAT_CONFIGS[statKey];
+  if (!config || value === undefined || value === null) return null;
 
-  const perfStats = [
-    { label: 'Damage', value: damage, max: 3, color: '#e5c587' },
-    { label: 'Toughness', value: toughness, max: 3, color: '#8ecefb' },
-    { label: 'Control', value: 1, max: 3, color: '#8ecefb' },
-    { label: 'Mobility', value: mobility, max: 3, color: '#e5c587' },
-    { label: 'Utility', value: 1, max: 3, color: '#8ecefb' },
-  ];
+  const formattedValue = formatStatValue(statKey, value);
+  const isZero = value === 0;
 
   return (
-    <Box
-      maxW="1200px"
-      mx="auto"
-      px={6}
-    >
+    <Tooltip label={config.description} placement="top" hasArrow>
+      <Box
+        bg="#111d26"
+        p={4}
+        borderRadius="8px"
+        border="1px solid rgba(77, 70, 58, 0.3)"
+        transition="all 0.2s"
+        _hover={{
+          borderColor: config.color,
+          boxShadow: `0 0 15px ${config.color}20`,
+        }}
+        opacity={isZero ? 0.5 : 1}
+      >
+        <Flex align="center" gap={3} mb={2}>
+          <Text fontSize="20px">{config.icon}</Text>
+          <Text
+            fontSize="11px"
+            fontFamily="'Work Sans', sans-serif"
+            color="#d0c5b5"
+            letterSpacing="0.1em"
+            textTransform="uppercase"
+          >
+            {config.label}
+          </Text>
+        </Flex>
+        <Flex align="baseline" gap={1}>
+          <Text
+            fontSize="24px"
+            fontWeight="bold"
+            color={isPerLevel ? config.color : '#d7e4f1'}
+            letterSpacing="tight"
+          >
+            {formattedValue}
+          </Text>
+          {isPerLevel && (
+            <Text fontSize="11px" color="#d0c5b550">
+              /lvl
+            </Text>
+          )}
+        </Flex>
+      </Box>
+    </Tooltip>
+  );
+}
+
+function StatProgressBar({
+  label,
+  value,
+  maxValue,
+  color,
+}: {
+  label: string;
+  value: number;
+  maxValue: number;
+  color: string;
+}) {
+  const percentage = Math.min((value / maxValue) * 100, 100);
+
+  return (
+    <Box width="100%">
+      <Flex justify="space-between" mb={1}>
+        <Text
+          fontSize="10px"
+          fontFamily="'Work Sans', sans-serif"
+          color="#d0c5b5"
+          letterSpacing="0.15em"
+          textTransform="uppercase"
+        >
+          {label}
+        </Text>
+        <Text fontSize="11px" color="#d7e4f1" fontWeight="medium">
+          {value.toFixed(1)}
+        </Text>
+      </Flex>
+      <Box height="8px" bg="#15212a" borderRadius="4px" overflow="hidden">
+        <Box
+          height="100%"
+          width={`${percentage}%`}
+          bg={color}
+          transition="width 0.5s ease-out"
+        />
+      </Box>
+    </Box>
+  );
+}
+
+export function StatsSection({ stats }: Props) {
+  const [selectedLevel, setSelectedLevel] = useState(1);
+
+  if (!stats) {
+    return (
+      <Box textAlign="center" py={10}>
+        <Text color="#d0c5b5">No hay estadísticas disponibles para este campeón.</Text>
+      </Box>
+    );
+  }
+
+  // Calcular estadísticas al nivel seleccionado
+  const getStatAtLevel = (baseKey: keyof ChampionStats, perLevelKey: keyof ChampionStats) => {
+    const baseValue = stats[baseKey] || 0;
+    const perLevelValue = stats[perLevelKey] || 0;
+    return calculateStatAtLevel(baseValue, perLevelValue, selectedLevel);
+  };
+
+  // Métricas derivadas para el performance matrix
+  const healthAtLevel = getStatAtLevel('hp', 'hpperlevel');
+  const damageAtLevel = getStatAtLevel('attackdamage', 'attackdamageperlevel');
+  const armorAtLevel = getStatAtLevel('armor', 'armorperlevel');
+  const mrAtLevel = getStatAtLevel('spellblock', 'spellblockperlevel');
+
+  // Normalizar valores para el performance matrix (0-100)
+  const performanceMetrics = {
+    damage: Math.min((damageAtLevel / 150) * 100, 100),
+    toughness: Math.min(((armorAtLevel + mrAtLevel) / 150) * 100, 100),
+    mobility: Math.min(((stats.movespeed - 300) / 150) * 100, 100),
+    health: Math.min((healthAtLevel / 2500) * 100, 100),
+  };
+
+  return (
+    <Box maxW="1400px" mx="auto" px={{ base: 4, md: 6 }}>
+      {/* Selector de Nivel */}
+      <Box
+        bg="rgba(17, 29, 38, 0.8)"
+        p={6}
+        mb={8}
+        borderLeft="4px solid #c8aa6e"
+      >
+        <Flex align="center" justify="space-between" wrap="wrap" gap={4}>
+          <Flex align="center" gap={3}>
+            <Text fontSize="24px">📊</Text>
+            <Text
+              fontFamily="Georgia, serif"
+              fontSize="20px"
+              fontStyle="italic"
+              color="#d7e4f1"
+            >
+              Estadísticas por Nivel
+            </Text>
+          </Flex>
+          <HStack gap={2}>
+            <Text fontSize="12px" color="#d0c5b5">Nivel:</Text>
+            {[1, 6, 11, 16, 18].map((level) => (
+              <Box
+                key={level}
+                as="button"
+                px={3}
+                py={1}
+                bg={selectedLevel === level ? '#c8aa6e' : '#1f2b35'}
+                color={selectedLevel === level ? '#111d26' : '#d0c5b5'}
+                fontSize="13px"
+                fontWeight={selectedLevel === level ? 'bold' : 'normal'}
+                borderRadius="4px"
+                onClick={() => setSelectedLevel(level)}
+                _hover={{ bg: selectedLevel === level ? '#c8aa6e' : '#2a3a4a' }}
+                transition="all 0.2s"
+              >
+                {level}
+              </Box>
+            ))}
+          </HStack>
+        </Flex>
+      </Box>
+
       <SimpleGrid columns={{ base: 1, lg: 12 }} gap={8}>
         {/* Performance Matrix */}
         <Box
-          gridColumn={{ base: '1', lg: 'span 5' }}
+          gridColumn={{ base: '1', lg: 'span 4' }}
           bg="#111d26"
-          p={8}
-          position="relative"
+          p={6}
           borderLeft="4px solid #8ecefb"
           boxShadow="0 10px 40px rgba(0,0,0,0.5)"
         >
-          <Flex align="center" gap={3} mb={8}>
-            <Text fontSize="24px" color="#8ecefb">
-              📊
-            </Text>
-            <Text
-              fontFamily="Georgia, serif"
-              fontSize="24px"
-              fontStyle="italic"
-              color="#d7e4f1"
-            >
-              Performance Matrix
-            </Text>
-          </Flex>
-
-          <Flex direction="column" gap={6}>
-            {perfStats.map((stat) => (
-              <Box key={stat.label}>
-                <Flex justify="space-between" mb={2}>
-                  <Text
-                    fontSize="11px"
-                    fontFamily="'Work Sans', sans-serif"
-                    color="#d0c5b5"
-                    letterSpacing="0.15em"
-                    textTransform="uppercase"
-                  >
-                    {stat.label}
-                  </Text>
-                  <Text
-                    fontSize="12px"
-                    fontWeight="bold"
-                    color={stat.value === stat.max ? stat.color : '#d7e4f1'}
-                  >
-                    {stat.value} / {stat.max}
-                  </Text>
-                </Flex>
-                <Flex h="12px" gap={1}>
-                  {Array.from({ length: stat.max }).map((_, i) => (
-                    <Box
-                      key={i}
-                      flex={1}
-                      h="100%"
-                      bg={i < stat.value ? stat.color : '#15212a'}
-                      boxShadow={i < stat.value ? `0 0 10px ${stat.color}40` : 'none'}
-                    />
-                  ))}
-                </Flex>
-              </Box>
-            ))}
-          </Flex>
-
-          {/* Decorative corner */}
-          <Box
-            position="absolute"
-            bottom="0"
-            right="0"
-            w="16"
-            h="16"
-            pointerEvents="none"
-            opacity={0.2}
+          <Text
+            fontFamily="Georgia, serif"
+            fontSize="20px"
+            fontStyle="italic"
+            color="#d7e4f1"
+            mb={6}
           >
-            <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', fill: '#c8aa6e' }}>
-              <path d="M100 0 L100 100 L0 100 Z" />
-            </svg>
+            Performance Matrix
+          </Text>
+
+          <VStack gap={5} align="stretch">
+            <StatProgressBar
+              label="Daño"
+              value={performanceMetrics.damage}
+              maxValue={100}
+              color="#fbbf24"
+            />
+            <StatProgressBar
+              label="Resistencia"
+              value={performanceMetrics.toughness}
+              maxValue={100}
+              color="#60a5fa"
+            />
+            <StatProgressBar
+              label="Movilidad"
+              value={performanceMetrics.mobility}
+              maxValue={100}
+              color="#2dd4bf"
+            />
+            <StatProgressBar
+              label="Vida"
+              value={performanceMetrics.health}
+              maxValue={100}
+              color="#ff6b6b"
+            />
+          </VStack>
+
+          {/* Valores calculados */}
+          <Box mt={6} pt={6} borderTop="1px solid rgba(77, 70, 58, 0.3)">
+            <Text
+              fontSize="11px"
+              color="#d0c5b580"
+              letterSpacing="0.1em"
+              textTransform="uppercase"
+              mb={3}
+            >
+              Estadísticas al Nivel {selectedLevel}
+            </Text>
+            <SimpleGrid columns={2} gap={3}>
+              <Box bg="#15212a" p={3} borderRadius="4px">
+                <Text fontSize="10px" color="#d0c5b5">HP</Text>
+                <Text fontSize="16px" color="#ff6b6b" fontWeight="bold">
+                  {Math.round(healthAtLevel)}
+                </Text>
+              </Box>
+              <Box bg="#15212a" p={3} borderRadius="4px">
+                <Text fontSize="10px" color="#d0c5b5">AD</Text>
+                <Text fontSize="16px" color="#fbbf24" fontWeight="bold">
+                  {Math.round(damageAtLevel)}
+                </Text>
+              </Box>
+              <Box bg="#15212a" p={3} borderRadius="4px">
+                <Text fontSize="10px" color="#d0c5b5">Armor</Text>
+                <Text fontSize="16px" color="#60a5fa" fontWeight="bold">
+                  {Math.round(armorAtLevel)}
+                </Text>
+              </Box>
+              <Box bg="#15212a" p={3} borderRadius="4px">
+                <Text fontSize="10px" color="#d0c5b5">MR</Text>
+                <Text fontSize="16px" color="#c084fc" fontWeight="bold">
+                  {Math.round(mrAtLevel)}
+                </Text>
+              </Box>
+            </SimpleGrid>
           </Box>
         </Box>
 
-        {/* Detailed Base Stats */}
+        {/* Estadísticas Detalladas */}
         <Box
-          gridColumn={{ base: '1', lg: 'span 7' }}
-          bg="rgba(31,43,53,0.4)"
+          gridColumn={{ base: '1', lg: 'span 8' }}
+          bg="rgba(31, 43, 53, 0.4)"
           backdropFilter="blur(20px)"
-          p={8}
-          border="1px solid rgba(77,70,58,0.2)"
-          position="relative"
-          overflow="hidden"
+          p={6}
+          border="1px solid rgba(77, 70, 58, 0.2)"
         >
-          <Flex align="center" gap={3} mb={8}>
-            <Text fontSize="24px" color="#c8aa6e">
-              📈
-            </Text>
-            <Text
-              fontFamily="Georgia, serif"
-              fontSize="24px"
-              fontStyle="italic"
-              color="#d7e4f1"
-            >
-              Base Vitality & Combat
-            </Text>
-          </Flex>
+          <Text
+            fontFamily="Georgia, serif"
+            fontSize="20px"
+            fontStyle="italic"
+            color="#d7e4f1"
+            mb={6}
+          >
+            Estadísticas Base
+          </Text>
 
-          <SimpleGrid columns={{ base: 1, md: 2 }} gapX={12} gapY={6}>
-            {BASE_STATS_CONFIG.map((cfg) => {
-              const value = getStatValue(cfg.key);
-              const perLevel = cfg.perLevelKey ? getStatValue(cfg.perLevelKey) : 0;
-              const hasValue = value > 0;
+          <VStack gap={8} align="stretch">
+            {STAT_GROUPS.map((group) => {
+              const groupStats = group.stats.filter((key) => stats[key] !== undefined && stats[key] !== 0);
+
+              if (groupStats.length === 0) return null;
 
               return (
-                <Box
-                  key={cfg.key}
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  borderBottom="1px solid rgba(77,70,58,0.3)"
-                  pb={2}
-                >
-                  <Flex align="center" gap={3}>
-                    <Text fontSize="18px" color="#c8aa6e">
-                      {cfg.icon}
-                    </Text>
+                <Box key={group.key}>
+                  <Flex align="center" gap={2} mb={4}>
+                    <Box width="3px" height="20px" bg={group.color} borderRadius="2px" />
                     <Text
-                      fontSize="10px"
+                      fontSize="12px"
                       fontFamily="'Work Sans', sans-serif"
-                      color="#d0c5b5"
+                      color={group.color}
                       letterSpacing="0.15em"
                       textTransform="uppercase"
+                      fontWeight="bold"
                     >
-                      {cfg.label}
+                      {group.label}
                     </Text>
                   </Flex>
-                  <Text
-                    fontSize="14px"
-                    fontWeight="bold"
-                    color="#d7e4f1"
-                    letterSpacing="tight"
-                  >
-                    {hasValue ? cfg.format(value) : '—'}
-                    {perLevel > 0 && (
-                      <Text as="span" fontSize="10px" color="#c8aa6e50" ml={1}>
-                        +{cfg.format(perLevel)}
-                      </Text>
-                    )}
-                  </Text>
+
+                  <SimpleGrid columns={{ base: 2, sm: 3, md: 4 }} gap={4}>
+                    {groupStats.map((statKey) => {
+                      const isPerLevel = statKey.toString().includes('perlevel');
+                      return (
+                        <StatCard
+                          key={statKey}
+                          statKey={statKey}
+                          value={stats[statKey]}
+                          isPerLevel={isPerLevel}
+                        />
+                      );
+                    })}
+                  </SimpleGrid>
                 </Box>
               );
             })}
-          </SimpleGrid>
+          </VStack>
 
-          {/* Info box */}
+          {/* Nota informativa */}
           <Flex
             mt={8}
             align="flex-start"
             gap={4}
             p={4}
-            bg="rgba(229,197,135,0.05)"
-            borderLeft="1px solid rgba(229,197,135,0.3)"
+            bg="rgba(229, 197, 135, 0.05)"
+            borderLeft="3px solid #c8aa6e"
           >
-            <Text fontSize="16px" color="#d0c5b5">
-              ℹ️
-            </Text>
-            <Text
-              fontSize="11px"
-              color="#d0c5b5"
-              fontStyle="italic"
-              lineHeight="1.7"
-            >
-              Stat values shown are base level (1) followed by growth per level. Actual in-game stats scale non-linearly. Energy regeneration is fixed at 10/s and does not scale with levels.
-            </Text>
+            <Text fontSize="16px">ℹ️</Text>
+            <Box>
+              <Text
+                fontSize="11px"
+                color="#d0c5b5"
+                lineHeight="1.7"
+              >
+                Los valores mostrados son las estadísticas base del campeón. Los valores &quot;+X/lvl&quot;
+                indican cuánto crece esa estadística por cada nivel. La energía no escala con niveles
+                y su regeneración es fija.
+              </Text>
+            </Box>
           </Flex>
         </Box>
       </SimpleGrid>
 
-      {/* Strategy Cards */}
-      <SimpleGrid columns={{ base: 1, md: 3 }} gap={8} mt={12} mb={24}>
-        {[
-          {
-            title: 'Early Game Strategy',
-            desc: 'Relies on high base movement speed to kite enemies. Early health is low, making vulnerable to poke before level 6.',
-            color: '#c8aa6e',
-          },
-          {
-            title: 'Mid Game Spike',
-            desc: 'Scaling Armor and MR per level allows diving backlines more safely once completing the first core item.',
-            color: '#8ecefb',
-          },
-          {
-            title: 'Late Game Scaling',
-            desc: 'While toughness stays low compared to bruisers, high mobility stats provide effective durability needed to escape.',
-            color: '#c8aa6e',
-          },
-        ].map((card, index) => (
-          <Box
-            key={index}
-            bg="#1f2b35"
-            p={6}
-            borderTop="2px solid"
-            borderColor={card.color}
-          >
-            <Text
-              fontFamily="Georgia, serif"
-              fontSize="18px"
-              fontStyle="italic"
-              color={card.color}
-              mb={4}
-            >
-              {card.title}
-            </Text>
-            <Text
-              fontSize="13px"
-              color="#d0c5b5"
-              lineHeight="1.7"
-            >
-              {card.desc}
-            </Text>
-          </Box>
-        ))}
-      </SimpleGrid>
+      {/* Comparación de niveles */}
+      <Box
+        mt={8}
+        bg="#111d26"
+        p={6}
+        border="1px solid rgba(77, 70, 58, 0.3)"
+      >
+        <Text
+          fontFamily="Georgia, serif"
+          fontSize="18px"
+          fontStyle="italic"
+          color="#d7e4f1"
+          mb={4}
+        >
+          Comparación de Crecimiento
+        </Text>
+
+        <SimpleGrid columns={{ base: 2, md: 4 }} gap={6}>
+          {[
+            { label: 'Vida', baseKey: 'hp' as const, perLevelKey: 'hpperlevel' as const, color: '#ff6b6b' },
+            { label: 'Daño', baseKey: 'attackdamage' as const, perLevelKey: 'attackdamageperlevel' as const, color: '#fbbf24' },
+            { label: 'Armadura', baseKey: 'armor' as const, perLevelKey: 'armorperlevel' as const, color: '#60a5fa' },
+            { label: 'Res. Mágica', baseKey: 'spellblock' as const, perLevelKey: 'spellblockperlevel' as const, color: '#c084fc' },
+          ].map((stat) => {
+            const baseValue = stats[stat.baseKey] || 0;
+            const perLevelValue = stats[stat.perLevelKey] || 0;
+            const level18Value = baseValue + perLevelValue * 17;
+
+            return (
+              <Box key={stat.label}>
+                <Text fontSize="12px" color="#d0c5b5" mb={2}>{stat.label}</Text>
+                <Flex align="baseline" gap={2}>
+                  <Text fontSize="20px" fontWeight="bold" color={stat.color}>
+                    {Math.round(baseValue)}
+                  </Text>
+                  <Text fontSize="12px" color="#d0c5b560">→</Text>
+                  <Text fontSize="20px" fontWeight="bold" color={stat.color}>
+                    {Math.round(level18Value)}
+                  </Text>
+                </Flex>
+                <Text fontSize="10px" color="#d0c5b580">
+                  (+{perLevelValue}/nivel)
+                </Text>
+              </Box>
+            );
+          })}
+        </SimpleGrid>
+      </Box>
     </Box>
   );
 }

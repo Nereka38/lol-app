@@ -6,8 +6,8 @@ import {
   useDisclosure, VStack,
 } from '@chakra-ui/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useRef } from 'react';
-import { ChampionStats } from './StatsSection';
+import { useState, useRef, useEffect } from 'react';
+import { StatsSection } from './StatsSection';
 import AbilitiesSection from './AbilitiesSection';
 import { Champion } from '@/app/types/champions';
 import Link from 'next/link';
@@ -21,18 +21,38 @@ interface Quote {
 }
 interface Props {
   champion: Champion;
-  quotes: Quote[];
 }
 
 const SECTIONS   = ['historia', 'habilidades', 'estadisticas', 'aspectos', 'voces'];
 
-export default function ChampionDetailClient({ champion, quotes }: Props) {
+export default function ChampionDetailClient({ champion }: Props) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [activeSection, setActiveSection] = useState('historia');
   const [currentPage, setCurrentPage]     = useState(0);
   const [selectedSkinIndex, setSelectedSkinIndex] = useState(0);
   const [playingIndex, setPlayingIndex]           = useState<number | null>(null);
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [isLoadingQuotes, setIsLoadingQuotes] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Cargar audios desde la API interna
+  useEffect(() => {
+    async function loadQuotes() {
+      try {
+        const encodedName = encodeURIComponent(champion.name);
+        const response = await fetch(`/api/audio/${encodedName}`);
+        if (response.ok) {
+          const data = await response.json();
+          setQuotes(data.quotes || []);
+        }
+      } catch (error) {
+        console.error('Error loading quotes:', error);
+      } finally {
+        setIsLoadingQuotes(false);
+      }
+    }
+    loadQuotes();
+  }, [champion.name]);
 
   const ITEMS_PER_PAGE  = 20;
   const totalPages      = Math.ceil(quotes.length / ITEMS_PER_PAGE);
@@ -184,23 +204,8 @@ export default function ChampionDetailClient({ champion, quotes }: Props) {
                         ))}
                       </VStack>
                     </Box>
-
-                    {/* Quote decorativa */}
-                    <Box position="relative" p="1px"
-                      bgGradient="linear(to-br, rgba(229,197,135,0.25), transparent)">
-                      <Box bg="#040f18" p={8}>
-                        <Text fontFamily="Georgia, serif" fontSize="15px" color="#e5c587"
-                          fontStyle="italic" lineHeight={1.7} mb={2}>
-                          "{champion.blurb ?? 'Una leyenda forjada en la batalla.'}"
-                        </Text>
-                        <Text fontSize="10px" color="#d0c5b5" letterSpacing="0.12em" textTransform="uppercase">
-                          — Nota del Archivista
-                        </Text>
-                      </Box>
-                    </Box>
                   </VStack>
 
-                  Lore principal
                   <Box flex={1}>
                     <Box position="relative" mb={8}>
                       <Text
@@ -232,12 +237,13 @@ export default function ChampionDetailClient({ champion, quotes }: Props) {
                 <AbilitiesSection
                   passive={champion.passive}
                   spells={champion.spells}
+                  championName={champion.name}
                 />
               )}
 
               {/* ─────────────── ESTADÍSTICAS ─────────────── */}
               {activeSection === 'estadisticas' && (
-                <ChampionStats stats={champion.stats} />
+                <StatsSection stats={champion.stats} />
               )}
 
               {/* ─────────────── ASPECTOS ─────────────── */}
@@ -263,7 +269,7 @@ export default function ChampionDetailClient({ champion, quotes }: Props) {
                           <Box
                             as="img" src={splashSrc} alt=""
                             w="100%" h="100%"
-                            style={{ objectFit: 'cover', filter: 'blur(40px)', opacity: 0.3, transform: 'scale(1.1)', brightness: '0.5' }}
+                            style={{ objectFit: 'cover', filter: 'blur(40px) brightness(0.5)', opacity: 0.3, transform: 'scale(1.1)' }}
                           />
                           <Box position="absolute" inset={0} bg="rgba(8,21,30,0.6)" />
                         </Box>
@@ -476,7 +482,11 @@ export default function ChampionDetailClient({ champion, quotes }: Props) {
                   <Box gridColumn={{ base: '1', lg: 'span 8' }}>
 
                     {/* Agrupamos las voces en páginas con categoría */}
-                    {quotes.length === 0 ? (
+                    {isLoadingQuotes ? (
+                      <Text color="rgba(208,197,181,0.5)" fontSize="14px">
+                        Cargando voces...
+                      </Text>
+                    ) : quotes.length === 0 ? (
                       <Text color="rgba(208,197,181,0.5)" fontSize="14px">
                         No hay voces disponibles para este campeón.
                       </Text>
@@ -521,11 +531,19 @@ export default function ChampionDetailClient({ champion, quotes }: Props) {
                                         setPlayingIndex(null);
                                         return;
                                       }
+                                      console.log('Playing audio:', quote.audio);
                                       const audio = new Audio(quote.audio);
                                       audioRef.current = audio;
-                                      audio.play().catch(() => {});
+                                      audio.play().catch((err) => {
+                                        console.error('Error playing audio:', err);
+                                        setPlayingIndex(null);
+                                      });
                                       setPlayingIndex(globalIdx);
                                       audio.onended = () => setPlayingIndex(null);
+                                      audio.onerror = () => {
+                                        console.error('Audio loading error for:', quote.audio);
+                                        setPlayingIndex(null);
+                                      };
                                     }}
                                     getFileName={getFileName}
                                   />

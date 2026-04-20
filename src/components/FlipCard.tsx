@@ -39,7 +39,7 @@ const ROLE_ICONS: Record<string, string> = {
 export default function FlipCard({ champ }: { champ: Champion }) {
   const [hovered, setHovered] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '0px 0px -60px 0px' });
+  const isInView = useInView(ref as React.RefObject<Element>, { once: true, margin: '0px 0px -60px 0px' });
 
   const primaryTag = champ.tags?.[0] ?? '';
   const accentColor = ROLE_COLORS[primaryTag] ?? '#c8aa6e';

@@ -318,7 +318,8 @@ export function LogoSVG() {
 // ── Botón de rol ────────────────────────────────────────────────
 function RoleButton({ label, icon, active, color, onClick }: { label: string; icon: string; active: boolean; color: string; onClick: () => void }) {
   return (
-    <motion.button
+    <Box
+      as={motion.button}
       onClick={onClick}
       whileHover={{ x: 4 }}
       whileTap={{ scale: 0.97 }}
@@ -340,6 +341,6 @@ function RoleButton({ label, icon, active, color, onClick }: { label: string; ic
       <span style={{ fontSize: '16px' }}>{icon}</span>
       {label}
       {active && <span style={{ marginLeft: 'auto', color, fontSize: '12px' }}>◆</span>}
-    </motion.button>
+    </Box>
   );
 }

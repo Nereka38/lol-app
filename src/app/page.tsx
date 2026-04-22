@@ -283,6 +283,7 @@ export default function Home() {
   const [filterOpen, setFilterOpen] = useState(false);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     getAllChampions().then((data) => { setChampions(data); setLoading(false); });
   }, []);
 

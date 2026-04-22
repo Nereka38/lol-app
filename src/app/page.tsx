@@ -279,12 +279,10 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [tagFilter, setTagFilter] = useState('');
   const [loading, setLoading] = useState(true);
-  const [mounted, setMounted] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [filterOpen, setFilterOpen] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     getAllChampions().then((data) => { setChampions(data); setLoading(false); });
   }, []);
 
@@ -298,8 +296,6 @@ export default function Home() {
   );
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
-
-  if (!mounted) return null;
 
   return (
     <Box

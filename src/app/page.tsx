@@ -433,46 +433,6 @@ export default function Home() {
       {/* ══ CONTENIDO PRINCIPAL ══ */}
       <Box as="main" pt="104px" pb={20} position="relative" zIndex={1}>
 
-        {/* Hero */}
-        <MotionFlex
-          direction="column" align="center" textAlign="center"
-          px={6} pt={12} pb={12}
-          initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <Text
-            fontFamily="Georgia, 'Times New Roman', serif"
-            fontSize="13px" letterSpacing="0.3em"
-            textTransform="uppercase" color="#e2c384" mb={4}
-          >
-            ELIGE TU LEYENDA
-          </Text>
-          <Text
-            fontFamily="Georgia, 'Times New Roman', serif"
-            fontSize={{ base: '56px', md: '96px' }}
-            fontWeight="800" color="#d7e4f1"
-            letterSpacing="-0.02em" lineHeight={1} mb={8}
-            sx={{ textShadow: '0 4px 32px rgba(0,0,0,0.5)' }}
-          >
-            CHAMPIONS
-          </Text>
-          <Flex
-            align="center" gap={4} py={2} px={8}
-            bg="#111d26" border="1px solid rgba(77,70,58,0.2)"
-            backdropFilter="blur(4px)"
-          >
-            <Text fontFamily="Georgia, 'Times New Roman', serif"
-              fontSize="24px" fontWeight="bold" color="#8ecefb">
-              {loading ? '—' : filtered.length}
-            </Text>
-            <Text fontFamily="'Work Sans', sans-serif" fontSize="13px"
-              fontWeight="600" letterSpacing="0.2em" textTransform="uppercase"
-              color="rgba(208,197,181,0.7)">
-              CAMPEONES DISPONIBLES
-            </Text>
-          </Flex>
-        </MotionFlex>
-
         {/* Loader */}
         {loading && (
           <Flex
@@ -560,6 +520,47 @@ export default function Home() {
             </Text>
           </Flex>
         )}
+
+        {/* Hero */}
+        <MotionFlex
+          direction="column" align="center" textAlign="center"
+          px={6} pt={12} pb={12}
+          initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <Text
+            fontFamily="Georgia, 'Times New Roman', serif"
+            fontSize="13px" letterSpacing="0.3em"
+            textTransform="uppercase" color="#e2c384" mb={4}
+          >
+            ELIGE TU LEYENDA
+          </Text>
+          <Text
+            fontFamily="Georgia, 'Times New Roman', serif"
+            fontSize={{ base: '56px', md: '96px' }}
+            fontWeight="800" color="#d7e4f1"
+            letterSpacing="-0.02em" lineHeight={1} mb={8}
+            sx={{ textShadow: '0 4px 32px rgba(0,0,0,0.5)' }}
+          >
+            CHAMPIONS
+          </Text>
+          <Flex
+            align="center" gap={4} py={2} px={8}
+            bg="#111d26" border="1px solid rgba(77,70,58,0.2)"
+            backdropFilter="blur(4px)"
+          >
+            <Text fontFamily="Georgia, 'Times New Roman', serif"
+              fontSize="24px" fontWeight="bold" color="#8ecefb">
+              {loading ? '—' : filtered.length}
+            </Text>
+            <Text fontFamily="'Work Sans', sans-serif" fontSize="13px"
+              fontWeight="600" letterSpacing="0.2em" textTransform="uppercase"
+              color="rgba(208,197,181,0.7)">
+              CAMPEONES DISPONIBLES
+            </Text>
+          </Flex>
+        </MotionFlex>
+
 
         {/* Sin resultados */}
         {!loading && filtered.length === 0 && (

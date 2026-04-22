@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { Champion } from '@/app/types/champions';
-import { getAllChampions } from './lib/api';
+import { getAllChampions, type Locale } from './lib/api';
 import './styles/fonts.css';
 import './styles/loader.css';
 import { Box, Flex, Text, SimpleGrid, Input } from '@chakra-ui/react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { roleTranslations } from '@/app/utils/roles';
+import { useLanguage } from '@/app/hooks/useLanguage';
 
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
@@ -275,17 +276,19 @@ function ChampionCard({ champ, index }: { champ: Champion; index: number }) {
 
 // ── Página principal ─────────────────────────────────────────────
 export default function Home() {
+  const { language, setLanguage } = useLanguage();
   const [champions, setChampions] = useState<Champion[]>([]);
   const [search, setSearch] = useState('');
   const [tagFilter, setTagFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    getAllChampions().then((data) => { setChampions(data); setLoading(false); });
-  }, []);
+    getAllChampions(language).then((data) => { setChampions(data); setLoading(false); });
+  }, [language]);
 
   useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, tagFilter]);
 
@@ -420,8 +423,72 @@ export default function Home() {
             </Box>
 
             <Flex gap={1}>
-              <NavIcon>⚙</NavIcon>
-              <NavIcon>👤</NavIcon>
+              <Box position="relative">
+                <NavIcon onClick={() => setSettingsOpen(!settingsOpen)}>⚙</NavIcon>
+                <AnimatePresence>
+                  {settingsOpen && (
+                    <MotionBox
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.2 }}
+                      position="absolute"
+                      top="calc(100% + 8px)"
+                      right={0}
+                      bg="#111d26"
+                      border="1px solid rgba(200,170,110,0.25)"
+                      minW="140px"
+                      zIndex={100}
+                      py={2}
+                    >
+                      <Box
+                        as="button"
+                        onClick={() => { setLanguage('es'); setSettingsOpen(false); }}
+                        w="100%"
+                        textAlign="left"
+                        px={4}
+                        py="10px"
+                        fontFamily="Georgia, 'Times New Roman', serif"
+                        fontSize="12px"
+                        letterSpacing="0.1em"
+                        textTransform="uppercase"
+                        color={language === 'es' ? '#e5c587' : 'rgba(208,197,181,0.7)'}
+                        bg={language === 'es' ? 'rgba(200,170,110,0.1)' : 'transparent'}
+                        cursor="pointer"
+                        sx={{
+                          transition: 'all 0.15s ease',
+                          '&:hover': { bg: 'rgba(200,170,110,0.06)', color: '#e5c587' },
+                        }}
+                      >
+                        {language === 'es' && <Box as="span" mr={2} color="#e5c587">◆</Box>}
+                        Español
+                      </Box>
+                      <Box
+                        as="button"
+                        onClick={() => { setLanguage('en'); setSettingsOpen(false); }}
+                        w="100%"
+                        textAlign="left"
+                        px={4}
+                        py="10px"
+                        fontFamily="Georgia, 'Times New Roman', serif"
+                        fontSize="12px"
+                        letterSpacing="0.1em"
+                        textTransform="uppercase"
+                        color={language === 'en' ? '#e5c587' : 'rgba(208,197,181,0.7)'}
+                        bg={language === 'en' ? 'rgba(200,170,110,0.1)' : 'transparent'}
+                        cursor="pointer"
+                        sx={{
+                          transition: 'all 0.15s ease',
+                          '&:hover': { bg: 'rgba(200,170,110,0.06)', color: '#e5c587' },
+                        }}
+                      >
+                        {language === 'en' && <Box as="span" mr={2} color="#e5c587">◆</Box>}
+                        English
+                      </Box>
+                    </MotionBox>
+                  )}
+                </AnimatePresence>
+              </Box>
             </Flex>
           </Flex>
         </Flex>

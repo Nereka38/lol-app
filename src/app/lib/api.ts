@@ -6,11 +6,20 @@ import { Champion, ChampionDetailResponse, ChampionListResponse, Quote, Skin } f
 // CONFIGURACIÓN
 // --------------------
 const VERSION = '15.7.1'; // Versión actualizada (puedes verificar la última en https://ddragon.leagueoflegends.com/api/versions.json)
-const BASE_URL_ES = `https://ddragon.leagueoflegends.com/cdn/${VERSION}/data/es_ES`;
-const BASE_URL_EN = `https://ddragon.leagueoflegends.com/cdn/${VERSION}/data/en_US`;
+const LOCALES = {
+  es: 'es_ES',
+  en: 'en_US',
+} as const;
+
+export type Locale = keyof typeof LOCALES;
+
 const FANDOM_BASE_URL = 'https://leagueoflegends.fandom.com/wiki';
 const LOL_GRAPHS_URL = 'https://www.leagueofgraphs.com/es/champions/stats';
 const IMAGE_BASE_URL = `https://ddragon.leagueoflegends.com/cdn/${VERSION}/img`;
+
+function getBaseUrl(locale: Locale = 'es'): string {
+  return `https://ddragon.leagueoflegends.com/cdn/${VERSION}/data/${LOCALES[locale]}`;
+}
 
 const DEFAULT_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -85,8 +94,8 @@ async function safeFetch<T>(url: string): Promise<T> {
 /**
  * Busca la clave exacta de un campeón en la API (case-insensitive).
  */
-async function findChampionKey(id: string): Promise<string | null> {
-  const allData = await safeFetch<ChampionListResponse>(`${BASE_URL_ES}/champion.json`);
+async function findChampionKey(id: string, locale: Locale = 'es'): Promise<string | null> {
+  const allData = await safeFetch<ChampionListResponse>(`${getBaseUrl(locale)}/champion.json`);
 
   return (
     Object.keys(allData.data).find(
@@ -132,11 +141,11 @@ export async function getChampionAudioQuotes(championName?: string): Promise<Quo
 // --------------------
 
 /**
- * Retorna la lista completa de campeones en español con sus estadísticas.
+ * Retorna la lista completa de campeones en el idioma especificado con sus estadísticas.
  */
-export async function getAllChampions(): Promise<Champion[]> {
+export async function getAllChampions(locale: Locale = 'es'): Promise<Champion[]> {
   try {
-    const response = await safeFetch<ChampionListResponse>(`${BASE_URL_ES}/champion.json`);
+    const response = await safeFetch<ChampionListResponse>(`${getBaseUrl(locale)}/champion.json`);
     return Object.values(response.data).map((champion) => ({
       ...champion,
       image: {
@@ -159,24 +168,24 @@ export async function getAllChampions(): Promise<Champion[]> {
  * Incluye todas las estadísticas, habilidades, skins, lore, etc.
  * Retorna null si no se encuentra o hay un error.
  */
-export async function getChampionById(id?: string): Promise<Champion | null> {
+export async function getChampionById(id?: string, locale: Locale = 'es'): Promise<Champion | null> {
   if (!id?.trim()) return null;
 
   try {
-    const championKey = await findChampionKey(id);
+    const championKey = await findChampionKey(id, locale);
 
     if (!championKey) {
       console.warn(`[getChampionById] Campeón no encontrado para ID: "${id}"`);
       return null;
     }
 
-    // Obtener datos en español (texto) e inglés (valores numéricos)
-    const [championDataEs, championDataEn] = await Promise.all([
-      safeFetch<ChampionDetailResponse>(`${BASE_URL_ES}/champion/${championKey}.json`),
-      safeFetch<ChampionDetailResponse>(`${BASE_URL_EN}/champion/${championKey}.json`).catch(() => null),
+    // Obtener datos en el idioma especificado y en inglés (valores numéricos)
+    const [championDataLocale, championDataEn] = await Promise.all([
+      safeFetch<ChampionDetailResponse>(`${getBaseUrl(locale)}/champion/${championKey}.json`),
+      safeFetch<ChampionDetailResponse>(`${getBaseUrl('en')}/champion/${championKey}.json`).catch(() => null),
     ]);
 
-    const champion = championDataEs.data[championKey];
+    const champion = championDataLocale.data[championKey];
     const championEn = championDataEn?.data[championKey];
 
     if (!champion) {
